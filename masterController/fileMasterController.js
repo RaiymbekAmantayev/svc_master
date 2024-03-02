@@ -9,6 +9,8 @@ const FormData = require('form-data');
 const {query} = require("express");
 const {Sequelize} = require("sequelize");
 
+
+// получение url поинта по юзеру
 const getPoint = async (req, res) => {
     try {
         const user = req.user;
@@ -22,7 +24,7 @@ const getPoint = async (req, res) => {
 
 
 
-
+// добавление данных в бдб на таблицу files
 const addFileToDb = async (req, res) => {
     try {
         console.log(req.body.name)
@@ -39,16 +41,12 @@ const addFileToDb = async (req, res) => {
             compressed: 0
         };
 
-        // Создаем массив обещаний для операции создания файла
         const promises = [];
 
-        // Добавляем обещание в массив
         promises.push(File.create(info));
 
-        // Ожидаем завершения операции создания файла
         const newFile = await Promise.all(promises);
 
-        // Отправляем результат клиенту
         return res.status(200).send(newFile);
     } catch (error) {
         console.error(error);
@@ -57,30 +55,27 @@ const addFileToDb = async (req, res) => {
 };
 
 
-
+//добавление данных в бд, на таблицу compressing
 const addCompressing = async (req, res) => {
     try {
-        // Получаем информацию из запроса
+
         const { fileId, compressingStatus } = req.body;
 
-        // Создаем массив обещаний для операций создания
         const promises = [];
 
-        // Добавляем обещание в массив для каждой записи, которую нужно создать
         promises.push(Compress.create({fileId: fileId, compressingStatus:compressingStatus}));
 
-        // Ждем завершения всех операций создания с помощью Promise.all()
         const newCompressions = await Promise.all(promises);
 
-        // Отправляем созданные записи клиенту
+
         return res.send(newCompressions);
     } catch (error) {
-        // Если возникла ошибка, отправляем ее клиенту
         console.error(error);
         return res.status(500).send("Ошибка сервера");
     }
 };
 
+// получение текущего статуса файла
 const getCompressing = async (req, res)=>{
     try{
         const fileId = req.query.fileId
