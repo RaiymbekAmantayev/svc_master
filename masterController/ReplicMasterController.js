@@ -103,6 +103,18 @@ const updateToReady = async (req, res)=>{
 
     }
 }
+const updateToError =async (req, res)=>{
+    try{
+        const id = req.params.id
+        const newRep = await Replicas.update({ status: 'error' }, { where: { id:id } })
+        if(newRep === 1){
+            return res.status(200).send("success")
+        }
+        return res.status(404).send("fail")
+    }catch (e){
+
+    }
+}
 
 
 module.exports={
@@ -110,5 +122,6 @@ module.exports={
     Show,
     ShowByDocId,
     getWaitingRep,
-    updateToReady
+    updateToReady,
+    updateToError
 }

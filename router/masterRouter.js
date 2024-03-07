@@ -25,5 +25,5 @@ router.post('/rep/add', passport.authenticate('jwt', {session: false}),  Replica
 router.get('/rep/get/wait',  ReplicasController.getWaitingRep)
 // обновление статуса
 router.put('/rep/update/:id', ReplicasController.updateToReady)
-
+router.put('/rep/update/error/:id', ReplicasController.updateToError)
 module.exports = router

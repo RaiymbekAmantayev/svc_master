@@ -34,6 +34,7 @@ db.users =require("./users")(sequelize, DataTypes)
 db.file = require("./file")(sequelize,DataTypes)
 db.file_replicas = require("./file_replicas")(sequelize,DataTypes)
 db.compressing = require("./compressFiles")(sequelize, DataTypes)
+db.monitoring = require('./Monitoring')(sequelize, DataTypes)
 db.sequelize.sync({ force: false })
     .then(() => {
         console.log('yes re-sync done!')
@@ -75,7 +76,13 @@ db.file_replicas.belongsTo(db.points, {foreignKey: 'pointId', as: 'points'});
 
 
 // In your association definitions
-db.file.hasMany(db.compressing, { foreignKey: 'fileId', as: 'compressingEntries' }); // Changed alias to avoid collision
-db.compressing.belongsTo(db.file, { foreignKey: 'fileId', as: 'file' }); // Changed alias to avoid collision
+db.file.hasMany(db.compressing, { foreignKey: 'fileId', as: 'compressingEntries' });
+db.compressing.belongsTo(db.file, { foreignKey: 'fileId', as: 'file' });
+
+// monitoring association
+db.file.hasMany(db.monitoring, {foreignKey: 'fileId', as: 'monitoring'});
+db.monitoring.belongsTo(db.file, {foreignKey: 'fileId', as: 'file'})
+
+
 
 module.exports = db;
