@@ -8,6 +8,14 @@ module.exports = (sequelize, DataTypes) => {
                 key: "id",
             }
         },
+        ReplicasId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: "file_replicas",
+                key: "id",
+            }
+        },
         typeError:{
             type: DataTypes.STRING,
             allowNull: true,

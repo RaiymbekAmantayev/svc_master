@@ -2,6 +2,10 @@ const db = require('../models')
 const Replicas = db.file_replicas;
 const File = db.file;
 const Point = db.points;
+const Monitoring =db.monitoring
+config={
+    port:  process.env.PORT
+}
 const Show = async (req, res) => {
     try {
         const point = await Point.findOne({ where: { base_url: `http://127.0.0.1:${config.port}` } });
@@ -100,7 +104,7 @@ const updateToReady = async (req, res)=>{
         }
         return res.status(404).send("fail")
     }catch (e){
-
+        return res.status(500).send("error", e)
     }
 }
 const updateToError =async (req, res)=>{
@@ -112,10 +116,21 @@ const updateToError =async (req, res)=>{
         }
         return res.status(404).send("fail")
     }catch (e){
-
+        return res.status(500).send("error", e)
     }
 }
 
+const updateToWaiting =async (req, res)=>{
+    try{
+        const id = req.params.id
+        const monitoring = await Monitoring.findByPk(id)
+        await Replicas.update({ status: 'waiting' }, { where: { id:monitoring.ReplicasId } })
+        await Monitoring.destroy({where:{id:id}})
+        return res.status(200).send("success")
+    }catch (e){
+        return res.status(500).send("error", e)
+    }
+}
 
 module.exports={
     addReplicInfoToDb,
@@ -123,5 +138,6 @@ module.exports={
     ShowByDocId,
     getWaitingRep,
     updateToReady,
-    updateToError
+    updateToError,
+    updateToWaiting
 }

@@ -83,6 +83,8 @@ db.compressing.belongsTo(db.file, { foreignKey: 'fileId', as: 'file' });
 db.file.hasMany(db.monitoring, {foreignKey: 'fileId', as: 'monitoring'});
 db.monitoring.belongsTo(db.file, {foreignKey: 'fileId', as: 'file'})
 
-
+// replicas association
+db.file_replicas.hasMany(db.monitoring, {foreignKey: 'ReplicasId', as: 'monitoring'});
+db.monitoring.belongsTo(db.file_replicas, {foreignKey: 'ReplicasId', as: 'file_replicas'})
 
 module.exports = db;
