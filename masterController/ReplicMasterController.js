@@ -1,42 +1,24 @@
 const db = require('../models')
+const {Op} = require("sequelize");
+const axios = require("axios");
 const Replicas = db.file_replicas;
 const File = db.file;
 const Point = db.points;
 const Monitoring =db.monitoring
+const Users = db.users
 config={
     port:  process.env.PORT
 }
-const Show = async (req, res) => {
-    try {
-        const point = await Point.findOne({ where: { base_url: `http://127.0.0.1:${config.port}` } });
-        const replicase = await Replicas.findAll({
-            include: [
-                {
-                    model: File,
-                    as: "files"
-                },
-                {
-                    model: Point,
-                    as: "points"
-                }
-            ]
-        });
-
-        const filteredReplicase = replicase.filter(rep => rep.pointId === point.id);
-
-        res.send(filteredReplicase);
-    } catch (error) {
-        console.error('Error in Show function:', error);
-        res.status(500).send('Internal Server Error');
-    }
-};
 
 const ShowByDocId = async (req, res) => {
     try {
+        const pointId = req.user.pointId;
+        console.log(pointId)
         const documentId = req.query.documentId;
-        const files = await File.findAll({where:{documentId:documentId}})
+        const files = await File.findAll({ where: { documentId: documentId } });
         const fileIds = files.map(file => file.id);
-        const point = await Point.findOne({ where: { base_url: `http://127.0.0.1:${config.port}` } });
+        const url = await Point.findByPk(pointId);
+        const point = await Point.findOne({ where: { base_url: url.base_url } });
         const replicase = await Replicas.findAll({
             where: {
                 fileId: {
@@ -56,7 +38,17 @@ const ShowByDocId = async (req, res) => {
         });
         const filteredReplicase = replicase.filter(rep => rep.pointId === point.id);
 
-        res.send(filteredReplicase);
+        const remoteFiles = await Promise.all(filteredReplicase.map(async rep => {
+            try {
+                const fileFiles = files.map(file => file.file);
+                const response = await axios.post(`$${url.base_url}/api/file/show`, fileFiles);
+                return response.data;
+            } catch (error) {
+                console.error('Error fetching file:', error);
+                return null; // Если произошла ошибка при получении файла, возвращаем null
+            }
+        }));
+        res.send(remoteFiles);
     } catch (error) {
         console.error('Error in Show function:', error);
         res.status(500).send('Internal Server Error');
@@ -134,7 +126,6 @@ const updateToWaiting =async (req, res)=>{
 
 module.exports={
     addReplicInfoToDb,
-    Show,
     ShowByDocId,
     getWaitingRep,
     updateToReady,

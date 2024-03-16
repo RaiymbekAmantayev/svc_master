@@ -1,7 +1,7 @@
 const db = require("../models");
 const {Op} = require("sequelize");
-const Point = db.points; // Поменял имя переменной на Point, чтобы избежать переопределения
-
+const Point = db.points;
+const File = db.file
 const config = {
     port: process.env.PORT,
     folder : process.env.ROOT_FOLDER
@@ -84,11 +84,12 @@ const PointById = async (req, res)=>{
     }
 }
 
+
 module.exports = {
     addPoint,
     showPoint,
     Delete,
     getPointByCode,
     getPointByCurrentService,
-    PointById
+    PointById,
 };

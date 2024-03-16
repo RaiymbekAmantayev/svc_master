@@ -2,12 +2,14 @@ const db = require("../models");
 const File = db.file;
 const Compress = db.compressing
 const Point = db.points
+const Replicas = db.file_replicas
 const axios = require('axios'); // Подключаем библиотеку для отправки HTTP-запросов
 const multer = require('multer');
 const upload = multer(); // Создаем multer middleware без параметров, чтобы принимать все файлы
 const FormData = require('form-data');
 const {query} = require("express");
-const {Sequelize} = require("sequelize");
+const {Sequelize, Op} = require("sequelize");
+const Users = db.users
 
 
 // получение url поинта по юзеру
@@ -106,13 +108,7 @@ const isExists = async (req, res) => {
 
 const getAllLocalFiles = async (req, res) => {
     try {
-        const localFiles = await File.findAll({
-            where: {
-                file: {
-                    [Sequelize.Op.like]: `${config.folder}%`,
-                },
-            },
-        });
+        const localFiles = await File.findAll();
         res.send( localFiles );
     } catch (error) {
         console.error('Ошибка при получении данных:', error);
@@ -149,21 +145,52 @@ const getFilesByDocument = async (req, res)=>{
     }
 }
 
-const getDocuments = async (req, res)=>{
-    const user = req.user
-    const point = await Point.findByPk(user.pointId)
-    const distinctDocumentIds = await File.findAll({
-        attributes: [
-            [Sequelize.fn('DISTINCT', Sequelize.col('documentId')), 'documentId'],
-        ],
-        where: {
-            file: {
-                [Sequelize.Op.like]: `${point.root_folder}%`,
-            },
-        },
-    });
-    res.send(distinctDocumentIds)
-}
+const getDocuments = async (req, res) => {
+    try {
+        const response = [];
+        const user = req.user;
+        const replicas = await Replicas.findAll({ where: { pointId: user.pointId,} });
+        const point = await Point.findByPk(user.pointId);
+        const users = await Users.findAll({where:{pointId:point.id}})
+        if (replicas.length > 0) {
+            for (const replic of replicas) {const distinctDocumentIds = await File.findAll({
+                attributes: [
+                    [Sequelize.fn('DISTINCT', Sequelize.col('documentId')), 'documentId'],
+                ],
+                where: {
+                    id: replic.fileId, // Используйте напрямую свойство id
+                },
+            });
+                const documentIds = distinctDocumentIds.map(file => file.dataValues)
+                for(const user of users){
+                    if(user.pointId === point.id){
+                        response.push(documentIds[0]);
+                    }
+                }
+            }
+            console.log(response)
+            return res.send(response);
+        }
+        const localFiles = []
+        const distinctDocumentIds = await File.findAll({
+            attributes: [
+                [Sequelize.fn('DISTINCT', Sequelize.col('documentId')), 'documentId'],
+            ],
+        });
+        const uniqueDocumentIds = [];
+
+        for (const file of distinctDocumentIds) {
+            if (!uniqueDocumentIds.includes(distinctDocumentIds)) {
+                uniqueDocumentIds.push(distinctDocumentIds);
+                localFiles.push(distinctDocumentIds[0])
+            }
+        }
+        return res.send(localFiles);
+    } catch (error) {
+        console.error('Error in getDocuments function:', error);
+        res.status(500).send('Internal Server Error');
+    }
+};
 
 const LastFile = async (req, res)=>{
     const file = await File.findOne({ order: [['id', 'DESC']] });
